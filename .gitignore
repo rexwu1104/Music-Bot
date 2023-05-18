@@ -1,0 +1,4 @@
+config.toml
+cookies.txt
+.cache
+**/__pycache__

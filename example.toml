@@ -1,0 +1,9 @@
+[youtube]
+cookie = "your cookie path"
+
+[spotify]
+id = "your spotify id"
+secret = "your spotify secret"
+
+[soundcloud]
+id = "your soundcloud id"
