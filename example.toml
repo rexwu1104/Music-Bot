@@ -7,3 +7,6 @@ secret = "your spotify secret"
 
 [soundcloud]
 id = "your soundcloud id"
+
+[general]
+token = "your token"

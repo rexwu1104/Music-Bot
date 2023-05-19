@@ -1,7 +1,10 @@
+import asyncio
+
 import discord
 
 from typing import Optional
 from dataclasses import dataclass
+from functools import partial
 
 from discord.ext import commands
 
@@ -14,6 +17,8 @@ from .utils import (
     spotify_playlist_re,
     soundcloud_playlist_re
 )
+
+from ..logger import Logger
 
 __all__ = (
     'GuildController',
@@ -63,17 +68,29 @@ class GuildController:
     def id(self) -> int:
         return self.guild.id
     
-    def __error_process(self, err):
+    @property
+    def is_playing(self):
+        return self.connection is not None and self.connection.is_playing()
+    
+    @property
+    def is_paused(self):
+        return self.connection is not None and self.connection.is_paused()
+    
+    async def __error_process(self, err, ctx: commands.Context):
         if err is not None:
             print(err)
+            return
+        
+        await self.next(ctx)
         
     def append(self, query: str):
+        self.bot.manager.logger.info(f"query: {query}")
         if query.startswith('https:'):
-            if youtube_single_re.match(query) is not None:
+            if youtube_single_re.search(query) is not None:
                 self.afters.append(Youtube(query))
-            if spotify_single_re.match(query) is not None:
+            if spotify_single_re.search(query) is not None:
                 self.afters.append(Spotify(query))
-            if soundcloud_single_re.match(query) is not None:
+            if soundcloud_single_re.search(query) is not None:
                 self.afters.append(SoundCloud(query))
         else:
             if Youtube.enabled:
@@ -82,6 +99,8 @@ class GuildController:
                 self.search_by(query, 'spotify')
             else:
                 self.search_by(query, 'soundcloud')
+                
+        self.afters[-1]
         
     def search_by(self, query: str, type: str):
         match type:
@@ -94,21 +113,34 @@ class GuildController:
                 
     async def with_channel(self, id: int):
         channel = self.bot.get_channel(id)
-        assert isinstance(channel, discord.VoiceChannel)
+        assert isinstance(channel, discord.VoiceChannel) or \
+               isinstance(channel, discord.StageChannel)
         
         self.connection = await channel.connect()
                 
-    async def start(self):
+    async def start(self, ctx: commands.Context):
         if self.current is None:
             self.current = self.afters.pop(0)
             
-        self.connection.play(TimedableAudioSource(self.current.to_source(), self.volume), after=lambda err: self.__error_process(err))
+        self.connection.play(
+            TimedableAudioSource(self.current.to_source(), self.volume),
+            after=lambda err: asyncio.ensure_future(self.__error_process(err, ctx), loop=self.bot.loop))
+        await ctx.send(embed=to_embed(ctx, self.current))
+        
+    async def next(self, ctx: commands.Context):
+        self.prevs.append(self.current)
+        self.current = None
+        
+        if len(self.afters):
+            await self.start(ctx)
 
 class Manager:
     gourps: set[GuildController]
+    logger: Logger
     
     def __init__(self):
         self.gourps = set()
+        self.logger = Logger('bot')
         
     def __contains__(self, __value: int) -> bool:
         return GuildController(__value) in self.gourps
@@ -123,11 +155,13 @@ class Manager:
     def add_controller(self, controller: GuildController) -> bool:
         length = len(self.gourps)
         self.gourps.add(controller)
+        self.logger.info(f"add controller: {controller.id}")
         return len(self.gourps) == length + 1
     
     def remove_controller(self, id: int) -> bool:
         length = len(self.gourps)
         self.gourps.remove(GuildController(id))
+        self.logger.info(f"remove controller: {id}")
         return len(self.gourps) == length - 1
     
 @dataclass

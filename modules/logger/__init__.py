@@ -7,11 +7,11 @@ class Formatter(logging.Formatter):
     name: str
 
     FORMATS = {
-        logging.DEBUG: "%(asctime)s %(bold_white)s[%(name)s-%(levelname)s]%(reset)s\t%(white)s%(message)s",
-        logging.INFO: "%(asctime)s %(bold_white)s[%(name)s-%(levelname)s]%(reset)s\t\t%(white)s%(message)s",
-        logging.WARNING: "%(asctime)s %(bold_yellow)s[%(name)s-%(levelname)s]%(reset)s\t%(white)s%(message)s",
-        logging.ERROR: "%(asctime)s %(red)s[%(name)s-%(levelname)s]%(reset)s\t%(white)s%(message)s",
-        logging.CRITICAL: "%(asctime)s %(bold_red)s[%(name)s-%(levelname)s]%(reset)s\t%(white)s%(message)s"
+        logging.DEBUG: "%(bold)s%(asctime)s %(bold_white)s%(levelname)s    %(red)s%(name)s %(reset)s%(message)s",
+        logging.INFO: "%(bold)s%(asctime)s %(bold_blue)s%(levelname)s     %(red)s%(name)s %(reset)s%(message)s",
+        logging.WARNING: "%(bold)s%(asctime)s %(bold_yellow)s%(levelname)s  %(red)s%(name)s %(reset)s%(message)s",
+        logging.ERROR: "%(bold)s%(asctime)s %(bold_red)s%(levelname)s    %(red)s%(name)s %(reset)s%(message)s",
+        logging.CRITICAL: "%(bold)s%(asctime)s %(red)s%(levelname)s %(red)s%(name)s %(reset)s%(message)s"
     }
 
     def format(self, record):
