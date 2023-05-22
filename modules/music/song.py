@@ -3,11 +3,9 @@ import spotipy
 import sclib
 
 from typing import Any, Optional
-from datetime import datetime, timedelta
 
 from yt_dlp import YoutubeDL
 from spotipy.oauth2 import SpotifyClientCredentials
-from discord.ext import commands
 
 from .utils import *
 from ..logger import Logger
@@ -23,8 +21,13 @@ class TimedableAudioSource(discord.PCMVolumeTransformer):
         return super().cleanup()
     
     def read(self) -> bytes:
-        self.position += 0.002
-        return super().read()
+        byte = super().read()
+        if byte == b'':
+            self.position = .0
+            return byte
+        else:
+            self.position += .002
+            return byte
 
 class Song:
     url: str
@@ -243,17 +246,3 @@ class SoundCloud(Song):
     @property
     def watch_count(self) -> str:
         return self.__data.user
-    
-def to_embed(ctx: commands.Context, song: Song) -> discord.Embed:
-    embed = discord.Embed(
-        color=discord.Colour.random(),
-        title=song.name,
-        url=song.target_url,
-        timestamp=datetime.now()
-    )
-    
-    embed.set_author(name='now playing...')
-    embed.set_footer(text=ctx.author.nick, icon_url=ctx.author.avatar.url)
-    embed.set_thumbnail(url=song.thumbnail)
-    
-    return embed

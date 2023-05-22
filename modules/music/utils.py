@@ -1,5 +1,7 @@
 import toml
 
+from functools import reduce
+
 config = toml.load("config.toml")
 
 def get_youtube_cookie() -> str | None:
@@ -42,3 +44,9 @@ def safe_list_get(array: list, index: int, default):
         return array[index]
     else:
         return default
+    
+def duration_to_length(time: int) -> str:
+    return f'{time//3600:02}:{time%3600//60:02}:{time%60:02}'
+
+def length_to_duration(time: str) -> int:
+    return reduce(lambda p, c: p * 60 + int(c), time.split(':'), 0)
